@@ -1,0 +1,81 @@
+(defn rotate-layer [matrix top left bottom right r]
+  (let [elements (concat
+                   ;; top row
+                   (map #(get-in matrix [top %])
+                        (range left (inc right)))
+
+                   ;; right column
+                   (map #(get-in matrix [% right])
+                        (range (inc top) (inc bottom)))
+
+                   ;; bottom row
+                   (map #(get-in matrix [bottom %])
+                        (range (dec right) (dec left) -1))
+
+                   ;; left column
+                   (map #(get-in matrix [% left])
+                        (range (dec bottom) top -1)))
+
+        elements (vec elements)
+        size (count elements)
+        shift (mod r size)
+        rotated (vec (concat (subvec elements shift)
+                             (subvec elements 0 shift)))]
+
+    ;; Put rotated elements back
+    (loop [mat matrix
+           idx 0]
+
+      (if (= idx size)
+        mat
+
+        (let [positions (concat
+                          (map #(vector top %)
+                               (range left (inc right)))
+
+                          (map #(vector % right)
+                               (range (inc top) (inc bottom)))
+
+                          (map #(vector bottom %)
+                               (range (dec right) (dec left) -1))
+
+                          (map #(vector % left)
+                               (range (dec bottom) top -1)))
+
+              [row col] (nth (vec positions) idx)]
+
+          (recur
+            (assoc-in mat [row col] (nth rotated idx))
+            (inc idx)))))))
+
+(defn rotate-matrix [matrix m n r]
+  (loop [matrix matrix
+         layer 0]
+
+    (if (>= layer (quot (min m n) 2))
+      matrix
+
+      (recur
+        (rotate-layer
+          matrix
+          layer
+          layer
+          (- m 1 layer)
+          (- n 1 layer)
+          r)
+        (inc layer)))))
+
+;; Read input
+(let [input (slurp *in*)
+      nums (mapv #(Integer/parseInt %) (clojure.string/split input #"\s+"))
+      m (nums 0)
+      n (nums 1)
+      r (nums 2)
+      values (subvec nums 3)
+      matrix (vec
+               (mapv vec
+                     (partition n values)))
+      result (rotate-matrix matrix m n r)]
+
+  (doseq [row result]
+    (println (clojure.string/join " " row))))
